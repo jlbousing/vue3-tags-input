@@ -392,6 +392,7 @@ $paddingItem: 4px 7px;
     padding: 5px 0;
     background: #ffffff;
     z-index: 1050;
+    color: #475569;
     box-shadow: 0 3px 8px 2px rgba(0, 0, 0, .1);
     border-radius: 0 0 6px 6px;
 
