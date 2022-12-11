@@ -1,16 +1,19 @@
 <template>
   <div @click="focusNewTag()"
+       v-click-outside="closeContextMenu"
        :class="{
           'v3ti--focus': isInputActive,
           'v3ti--error': isError
         }"
        class="v3ti">
-    <div class="v3ti-content">
+    <div class="v3ti-content"
+         ref="inputBox"
+         :class="{ 'v3ti-content--select': select }">
         <span v-for="(tag, index) in innerTags"
               :key="index"
               class="v3ti-tag">
-          <slot v-if="$slots.item"
-                name="item" v-bind="{ name: tag, index }"></slot>
+          <slot v-if="isShot('item')"
+                name="item" v-bind="{ name: tag, index, tag }"></slot>
           <span v-else> {{ tag }} </span>
           <a v-if="!readOnly" @click.prevent.stop="remove(index)" class="v3ti-remove-tag"></a>
         </span>
@@ -25,22 +28,43 @@
           @input="makeItNormal"
           class="v3ti-new-tag"/>
     </div>
+    <section v-if="select"
+             class="v3ti-context-menu"
+             ref="contextMenu">
+      <div v-if="loading"
+           class="v3ti-loading">
+        <slot v-if="isShot('loading')"></slot>
+        <Loading v-else/>
+      </div>
+      <div v-if="!loading && selectItems.length === 0"
+           class="v3ti-no-data">
+        <slot v-if="isShot('no-data')" name="no-data"></slot>
+        <span v-else>
+          No data
+        </span>
+      </div>
+      <div v-if="!loading && selectItems.length > 0">
+<!--        :class="{'v3ti-context-item&#45;&#45;active': isShowCheckmark(index)}"-->
+        <div v-for="(item, index) in selectItems"
+             :key="index"
+             class="v3ti-context-item"
+             @click.stop="handleSelect(item, index)">
+          <slot name="select-item"
+                v-bind="item"></slot>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script>
-const validators = {
-  email: new RegExp(
-      /^[a-z][a-z0-9_\.]{2,50}@[a-z0-9]{2,}(\.[a-z0-9]{2,4}){1,2}$/
-  ),
-  url: new RegExp(
-      /^(https?|ftp|rmtp|mms):\/\/(([A-Z0-9][A-Z0-9_-]*)(\.[A-Z0-9][A-Z0-9_-]*)+)(:(\d+))?\/?/i
-  ),
-  text: new RegExp(/^[a-zA-Z]+$/),
-};
+import vClickOutside from 'click-outside-vue3';
+import Loading from '@/compoments/Loading.vue';
+
 export default {
   name: "Vue3TagsInput",
-  emits: ['update:modelValue', 'on-limit', 'on-tags-changed', 'on-remove', 'on-error', 'on-focus', 'on-blur'],
+  emits: ['update:modelValue', 'update:tags', 'on-limit', 'on-tags-changed', 'on-remove',
+    'on-error', 'on-focus', 'on-blur', 'on-select'],
   props: {
     readOnly: {
       type: Boolean,
@@ -72,6 +96,10 @@ export default {
       type: Array,
       default: () => []
     },
+    loading: {
+      type: Boolean,
+      default: false
+    },
     limit: {
       type: Number,
       default: -1
@@ -84,23 +112,44 @@ export default {
       type: Boolean,
       default: false
     },
+    selectItems: {
+      type: Array,
+      default: () => []
+    },
+    select: {
+      type: Boolean,
+      default: false
+    },
+    // multiple: {
+    //   type: Boolean,
+    //   default: false
+    // },
+  },
+  components: { Loading },
+  directives: {
+    clickOutside: vClickOutside.directive
   },
   data() {
     return {
       isInputActive: false,
       isError: false,
       newTag: '',
-      innerTags: []
+      innerTags: [],
+      multiple: false
     }
   },
   computed: {
     isLimit() {
-      let isLimit = this.limit > 0 && Number(this.limit) === this.innerTags.length;
+      const isLimit = this.limit > 0 && Number(this.limit) === this.innerTags.length;
       if (isLimit) {
         this.$emit('on-limit');
       }
       return isLimit;
-    }
+    },
+
+    selectedItemsIndex() {
+      return this.tags.map((o, i) => i);
+    },
   },
   watch: {
     error() {
@@ -109,7 +158,6 @@ export default {
     modelValue: {
       immediate: true,
       handler(value) {
-        console.log('value: ', value)
         this.newTag = value;
       }
     },
@@ -117,31 +165,91 @@ export default {
       deep: true,
       immediate: true,
       handler(tags) {
-        this.innerTags = [...tags];
+        this.innerTags = [...tags]
       }
     },
     newTag() {
-      if(this.newTag.length > 50){
+      if (this.newTag.length > 50) {
         this.$refs.inputTag.className = 'v3ti-new-tag v3ti-new-tag--error';
-        this.$refs.inputTag.style.textDecoration="underline";
+        this.$refs.inputTag.style.textDecoration = "underline";
       }
     }
   },
   methods: {
+    isShot(name) {
+      return !!this.$slots[name]
+    },
     makeItNormal(event) {
       this.$emit('update:modelValue', event.target.value)
       this.$refs.inputTag.className = 'v3ti-new-tag';
-      this.$refs.inputTag.style.textDecoration="none";
+      this.$refs.inputTag.style.textDecoration = "none";
     },
     resetData() {
       this.innerTags = []
     },
+
+    resetInputValue() {
+      this.newTag = '';
+      this.$emit('update:modelValue', '');
+    },
+
+    setPosition() {
+      const el = this.$refs.inputBox;
+      const menu = this.$refs.contextMenu;
+      if (el && menu) {
+        menu.style.display = "block";
+        // menu.style.position = 'fixed';
+        const ELEMENT_HEIGHT = el.clientHeight || 32;
+        // eslint-disable-next-line no-unused-vars
+        const getOffset = () => {
+          const rect = el.getBoundingClientRect();
+          return {
+            left: rect.left + window.scrollX - this.offsetLeft,
+            top: rect.top + window.scrollY
+          };
+        };
+        const BORDER_HEIGHT = 3;
+        menu.style.top = ELEMENT_HEIGHT + BORDER_HEIGHT + "px";
+      }
+    },
+
+    closeContextMenu() {
+      if (this.$refs.contextMenu) {
+        this.$refs.contextMenu.style = { display: 'none' };
+      }
+    },
+
+    handleSelect(item) {
+      // if (this.isShowCheckmark(index)) {
+      //   const tags = this.tags.filter((o, i) => i !== index);
+      //   this.$emit('update:tags', tags);
+      //   this.resetInputValue();
+      // } else {
+      //   this.$emit('on-select', item);
+      // }
+      this.$emit('on-select', item);
+      this.$nextTick(() => {
+        this.setPosition();
+        if (!this.multiple) {
+          this.closeContextMenu()
+        }
+      })
+    },
+
+    isShowCheckmark(index) {
+      return this.selectedItemsIndex.includes(index);
+    },
+
     focusNewTag() {
+      if (this.select && !this.disabled) {
+        this.setPosition();
+      }
       if (this.readOnly || !this.$el.querySelector(".v3ti-new-tag")) {
         return;
       }
       this.$el.querySelector(".v3ti-new-tag").focus();
     },
+
     handleInputFocus(event) {
       this.isInputActive = true;
       this.$emit('on-focus', event);
@@ -152,6 +260,9 @@ export default {
       this.$emit('on-blur', e);
     },
     addNew(e) {
+      if (this.select) {
+        return;
+      }
       const keyShouldAddTag = e
           ? this.addTagOnKeys.indexOf(e.keyCode) !== -1
           : true;
@@ -162,21 +273,25 @@ export default {
       ) {
         return;
       }
+      this.$nextTick(() => {
+        if (this.select && this.multiple) {
+          this.setPosition();
+        }
+      })
       if (
           this.newTag &&
           (this.allowDuplicates || this.innerTags.indexOf(this.newTag) === -1) &&
           this.validateIfNeeded(this.newTag) && this.newTag.length <= 50
       ) {
         this.innerTags.push(this.newTag);
-        this.newTag = "";
-        this.$emit('update:modelValue', '');
+        this.resetInputValue();
         this.tagChange();
         e && e.preventDefault();
       } else {
-        if(this.validateIfNeeded(this.newTag)){
-          if(this.newTag && this.newTag.length <= 50) {
+        if (this.validateIfNeeded(this.newTag)) {
+          if (this.newTag && this.newTag.length <= 50) {
             this.makeItError(true);
-          }else {
+          } else {
             this.makeItError('maxLength');
           }
         } else {
@@ -187,7 +302,7 @@ export default {
     },
     makeItError(isDuplicatedOrMaxLength) {
       this.$refs.inputTag.className = 'v3ti-new-tag v3ti-new-tag--error';
-      this.$refs.inputTag.style.textDecoration="underline";
+      this.$refs.inputTag.style.textDecoration = "underline";
       this.$emit('on-error', isDuplicatedOrMaxLength);
     },
     validateIfNeeded(tagValue) {
@@ -196,18 +311,6 @@ export default {
       }
       if (typeof this.validate === "function") {
         return this.validate(tagValue);
-      }
-      if (
-          typeof this.validate === "string" &&
-          Object.keys(validators).indexOf(this.validate) > -1
-      ) {
-        return validators[this.validate].test(tagValue);
-      }
-      if (
-          typeof this.validate === "object" &&
-          this.validate.test !== undefined
-      ) {
-        return this.validate.test(tagValue);
       }
       return true;
     },
@@ -220,8 +323,14 @@ export default {
     },
     remove(index) {
       this.innerTags.splice(index, 1);
+      // this.$emit('update:tags', this.innerTags);
       this.tagChange();
       this.$emit("on-remove", index)
+      this.$nextTick(() => {
+        if (this.select && this.multiple) {
+          this.setPosition();
+        }
+      })
     },
     tagChange() {
       this.$emit("on-tags-changed", this.innerTags);
@@ -230,69 +339,4 @@ export default {
 };
 </script>
 
-<style lang="scss">
-.v3ti {
-  border-radius: 5px;
-  min-height: 32px;
-  line-height: 1.4 !important;
-  background-color: #fff;
-  border: 1px solid #9ca3af;
-  overflow: hidden;
-  cursor: text;
-  text-align: left;
-  -webkit-appearance: textfield;
-  display: flex;
-  flex-wrap: wrap;
-  &--focus {
-    outline: 0;
-    border-color: #000000;
-    box-shadow: 0 0 0 1px #000000;
-  }
-  &--error{
-    border-color: #F56C6C;
-  }
-  .v3ti-content {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-  }
-  .v3ti-tag {
-    display: flex;
-    font-weight: 400;
-    margin: 3px;
-    padding: 0 5px;
-    background: #317CAF;
-    color: #ffffff;
-    height: 27px;
-    border-radius: 5px;
-    align-items: center;
-    .v3ti-remove-tag {
-      color: #ffffff;
-      transition: opacity .3s ease;
-      opacity: .5;
-      cursor: pointer;
-      padding: 0 5px 0 7px;
-      &::before {
-        content: "x";
-      }
-      &:hover {
-        opacity: 1;
-      }
-    }
-  }
-  .v3ti-new-tag {
-    background: transparent;
-    border: 0;
-    font-weight: 400;
-    margin: 3px;
-    outline: none;
-    padding:0 4px;
-    flex: 1;
-    min-width: 60px;
-    height: 27px;
-    &--error {
-      color: #F56C6C;
-    }
-  }
-}
-</style>
+<style lang="scss" src="@/scss/tags-input.scss"></style>

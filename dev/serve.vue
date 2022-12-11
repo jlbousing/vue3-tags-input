@@ -1,9 +1,9 @@
 <template>
   <div id="app">
+    {{ tags }}
     <div class="form">
       <!--      npm publish-->
       <vue3-tags-input placeholder="add tags"
-                       :limit="2"
                        :tags="tags"
                        :validate="csValidate"
                        @on-focus="handleFocus"
@@ -16,9 +16,22 @@
       </vue3-tags-input>
       <br>
       <div class="custom-input-tags">
-        <vue3-tags-input :tags="tags"
+        <vue3-tags-input v-model:tags="tagsSelect"
                          v-model="tag"
-                         placeholder="custom input tags" />
+                         :select="true"
+                         multiple
+                         :select-items="selectItems"
+                         @on-select="handleSelectedTag">
+          <template #item="{ tag, index }">
+            {{ tag.name }} {{ tag._key }}
+          </template>
+          <template #no-data>
+            No Data
+          </template>
+          <template #select-item="tag">
+            {{ tag.name }}
+          </template>
+        </vue3-tags-input>
         <input type="text" v-model="tag">
       </div>
     </div>
@@ -36,8 +49,17 @@ export default defineComponent({
   },
   data() {
     return {
-      tag: 'model',
-      tags: ['VUE', 'HTML', 'CSS']
+      tag: '',
+      tags: ['VUE', 'HTML', 'CSS'],
+      tagsSelect: [],
+      selectItems: [
+        { name: 'HTML', id1: 1 },
+        { name: 'CSS', id1: 2 },
+        { name: 'VUE', id1: 3 },
+        { name: 'HTML1', id1: 4 },
+        { name: 'CSS1', id1: 5 },
+        { name: 'VUE1', id1: 6 },
+      ]
     }
   },
   methods: {
@@ -47,6 +69,9 @@ export default defineComponent({
     csValidate(value) {
       const regex = new RegExp(/^[a-zA-Z]+$/);
       return regex.test(value)
+    },
+    handleSelectedTag(tag) {
+      this.tagsSelect.push(tag)
     },
     handleFocus(event) {
       console.log('focus', event)
@@ -66,6 +91,6 @@ body {
   font-family: Inter var,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
 }
 .form {
-  width: 450px;
+  width: 300px;
 }
 </style>
