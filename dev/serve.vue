@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-    {{ tags }}
     <div class="form">
       <!--      npm publish-->
       <vue3-tags-input placeholder="add tags"
