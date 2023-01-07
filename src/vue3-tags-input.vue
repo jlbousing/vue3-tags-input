@@ -44,13 +44,27 @@
         </span>
       </div>
       <div v-if="!loading && selectItems.length > 0">
-<!--        :class="{'v3ti-context-item&#45;&#45;active': isShowCheckmark(index)}"-->
+
         <div v-for="(item, index) in selectItems"
              :key="index"
              class="v3ti-context-item"
+             :class="{'v3ti-context-item--active': isShowCheckmark(item)}"
              @click.stop="handleSelect(item, index)">
-          <slot name="select-item"
-                v-bind="item"></slot>
+          <div class="v3ti-context-item--label">
+            <slot name="select-item"
+                  v-bind="item"></slot>
+          </div>
+          <svg v-if="isShowCheckmark(item)"
+               class="v3ti-icon-selected-tag"
+               width="44" height="44"
+               viewBox="0 0 24 24"
+               stroke-width="1.5"
+               fill="none"
+               stroke-linecap="round"
+               stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z"/>
+            <path d="M5 12l5 5l10 -10" />
+          </svg>
         </div>
       </div>
     </section>
@@ -64,7 +78,7 @@ import Loading from '@/compoments/Loading.vue';
 export default {
   name: "Vue3TagsInput",
   emits: ['update:modelValue', 'update:tags', 'on-limit', 'on-tags-changed', 'on-remove',
-    'on-error', 'on-focus', 'on-blur', 'on-select'],
+    'on-error', 'on-focus', 'on-blur', 'on-select', 'on-select-duplicate-tag'],
   props: {
     readOnly: {
       type: Boolean,
@@ -120,6 +134,14 @@ export default {
       type: Boolean,
       default: false
     },
+    duplicateSelectItem: {
+      type: Boolean,
+      default: true
+    },
+    uniqueSelectField: {
+      type: String,
+      default: 'id'
+    },
     // multiple: {
     //   type: Boolean,
     //   default: false
@@ -147,8 +169,11 @@ export default {
       return isLimit;
     },
 
-    selectedItemsIndex() {
-      return this.tags.map((o, i) => i);
+    selectedItemsIds() {
+      if (!this.duplicateSelectItem) {
+        return this.tags.map(o => o[this.uniqueSelectField] || '');
+      }
+      return []
     },
   },
   watch: {
@@ -187,7 +212,6 @@ export default {
     resetData() {
       this.innerTags = []
     },
-
     resetInputValue() {
       this.newTag = '';
       this.$emit('update:modelValue', '');
@@ -200,14 +224,6 @@ export default {
         menu.style.display = "block";
         // menu.style.position = 'fixed';
         const ELEMENT_HEIGHT = el.clientHeight || 32;
-        // eslint-disable-next-line no-unused-vars
-        const getOffset = () => {
-          const rect = el.getBoundingClientRect();
-          return {
-            left: rect.left + window.scrollX - this.offsetLeft,
-            top: rect.top + window.scrollY
-          };
-        };
         const BORDER_HEIGHT = 3;
         menu.style.top = ELEMENT_HEIGHT + BORDER_HEIGHT + "px";
       }
@@ -219,25 +235,25 @@ export default {
       }
     },
 
-    handleSelect(item) {
-      // if (this.isShowCheckmark(index)) {
-      //   const tags = this.tags.filter((o, i) => i !== index);
-      //   this.$emit('update:tags', tags);
-      //   this.resetInputValue();
-      // } else {
-      //   this.$emit('on-select', item);
-      // }
-      this.$emit('on-select', item);
+    handleSelect(tagData) {
+      if (this.isShowCheckmark(tagData)) {
+        const tags = this.tags.filter(o => tagData.id !== o.id);
+        this.$emit('update:tags', tags);
+        this.$emit('on-select-duplicate-tag', tagData);
+        this.resetInputValue();
+      } else {
+        this.$emit('on-select', tagData);
+      }
       this.$nextTick(() => {
-        this.setPosition();
-        if (!this.multiple) {
-          this.closeContextMenu()
-        }
+        this.closeContextMenu()
       })
     },
 
-    isShowCheckmark(index) {
-      return this.selectedItemsIndex.includes(index);
+    isShowCheckmark(tag) {
+      if (!this.duplicateSelectItem) {
+        return this.selectedItemsIds.includes(tag[this.uniqueSelectField]);
+      }
+      return false
     },
 
     focusNewTag() {
@@ -273,11 +289,11 @@ export default {
       ) {
         return;
       }
-      this.$nextTick(() => {
-        if (this.select && this.multiple) {
-          this.setPosition();
-        }
-      })
+      // this.$nextTick(() => {
+      //   if (this.select && this.multiple) {
+      //     this.setPosition();
+      //   }
+      // })
       if (
           this.newTag &&
           (this.allowDuplicates || this.innerTags.indexOf(this.newTag) === -1) &&
@@ -326,11 +342,11 @@ export default {
       // this.$emit('update:tags', this.innerTags);
       this.tagChange();
       this.$emit("on-remove", index)
-      this.$nextTick(() => {
-        if (this.select && this.multiple) {
-          this.setPosition();
-        }
-      })
+      // this.$nextTick(() => {
+      //   if (this.select && this.multiple) {
+      //     this.setPosition();
+      //   }
+      // })
     },
     tagChange() {
       this.$emit("on-tags-changed", this.innerTags);
@@ -343,6 +359,7 @@ export default {
 $blackColor: #000000;
 $errorColor: #F56C6C;
 $primaryColor: #317CAF;
+$successColor: #19be6b;
 $paddingItem: 4px 7px;
 .v3ti {
   border-radius: 5px;
@@ -356,6 +373,12 @@ $paddingItem: 4px 7px;
   display: flex;
   flex-wrap: wrap;
   position: relative;
+  .v3ti-icon-selected-tag {
+    stroke: $successColor;
+    width: 1rem;
+    height: 1rem;
+    margin-left: 4px;
+  }
 
   &--focus {
     outline: 0;
@@ -395,17 +418,20 @@ $paddingItem: 4px 7px;
     color: #475569;
     box-shadow: 0 3px 8px 2px rgba(0, 0, 0, .1);
     border-radius: 0 0 6px 6px;
-
-    .v3ti-context-item--active {
-      color: $primaryColor;
-    }
-
     .v3ti-context-item {
       padding: $paddingItem;
-
+      display: flex;
+      align-items: center;
       &:hover {
         background: #e8e8e8;
         cursor: pointer;
+      }
+      &--label {
+        flex: 1;
+        min-width: 1px;
+      }
+      &--active {
+        color: $primaryColor;
       }
     }
   }

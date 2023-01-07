@@ -15,14 +15,16 @@
       </vue3-tags-input>
       <br>
       <div class="custom-input-tags">
+        {{ tagsSelect }}
         <vue3-tags-input v-model:tags="tagsSelect"
                          v-model="tag"
                          :select="true"
-                         multiple
+                         placeholder="multiple"
                          :select-items="selectItems"
+                         :duplicate-select-item="false"
                          @on-select="handleSelectedTag">
           <template #item="{ tag, index }">
-            {{ tag.name }} {{ tag._key }}
+            {{ tag.name }}
           </template>
           <template #no-data>
             No Data
@@ -52,12 +54,12 @@ export default defineComponent({
       tags: ['VUE', 'HTML', 'CSS'],
       tagsSelect: [],
       selectItems: [
-        { name: 'HTML', id1: 1 },
-        { name: 'CSS', id1: 2 },
-        { name: 'VUE', id1: 3 },
-        { name: 'HTML1', id1: 4 },
-        { name: 'CSS1', id1: 5 },
-        { name: 'VUE1', id1: 6 },
+        { name: 'HTML', id: 1 },
+        { name: 'CSS', id: 2 },
+        { name: 'VUE', ida: 3 },
+        { name: 'HTML1', id: 4 },
+        { name: 'CSS1', id: 5 },
+        { name: 'VUE1', id: 6 },
       ]
     }
   },
