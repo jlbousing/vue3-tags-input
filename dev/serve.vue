@@ -20,7 +20,7 @@
                          v-model="tag"
                          :select="true"
                          placeholder="multiple"
-                         :select-items="selectItems"
+                         :select-items="suggestItems"
                          :duplicate-select-item="false"
                          @on-select="handleSelectedTag">
           <template #item="{ tag, index }">
@@ -48,6 +48,16 @@ export default defineComponent({
   components: {
     Vue3TagsInput
   },
+  computed: {
+    // suggestions filtration for select modes
+    suggestItems() {
+      if (this.tag) {
+        return this.selectItems.filter(e => e.name.toLowerCase().indexOf(this.tag.toLowerCase()) !== -1)
+      } else {
+        return this.selectItems
+      }
+    }
+  },
   data() {
     return {
       tag: '',
@@ -73,6 +83,7 @@ export default defineComponent({
     },
     handleSelectedTag(tag) {
       this.tagsSelect.push(tag)
+      this.tag = ''
     },
     handleFocus(event) {
       console.log('focus', event)
