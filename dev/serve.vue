@@ -19,12 +19,17 @@
         <vue3-tags-input v-model:tags="tagsSelect"
                          v-model="tag"
                          :select="true"
-                         placeholder="multiple"
+                         placeholder="Enter & Select"
                          :select-items="suggestItems"
                          :duplicate-select-item="false"
+                         :add-tag-on-keys-when-select="true"
+                         @on-new-tag="handleChangeTag1"
                          @on-select="handleSelectedTag">
           <template #item="{ tag, index }">
-            {{ tag.name }}
+            <span v-if="tag.name">
+              {{ tag.name }}
+            </span>
+            <span v-else> {{ tag }}</span>
           </template>
           <template #no-data>
             No Data
@@ -66,7 +71,7 @@ export default defineComponent({
       selectItems: [
         { name: 'HTML', id: 1 },
         { name: 'CSS', id: 2 },
-        { name: 'VUE', ida: 3 },
+        { name: 'VUE', id: 3 },
         { name: 'HTML1', id: 4 },
         { name: 'CSS1', id: 5 },
         { name: 'VUE1', id: 6 },
@@ -77,12 +82,16 @@ export default defineComponent({
     handleChangeTag(tags) {
       this.tags = tags;
     },
+    handleChangeTag1(tagValue) {
+      console.log('tagValue: ', tagValue);
+      this.tagsSelect = [...this.tagsSelect, { id: 123, name: tagValue }]
+    },
     csValidate(value) {
       const regex = new RegExp(/^[a-zA-Z]+$/);
       return regex.test(value)
     },
     handleSelectedTag(tag) {
-      this.tagsSelect.push(tag)
+      this.tagsSelect = [...this.tagsSelect, tag]
       this.tag = ''
     },
     handleFocus(event) {

@@ -78,7 +78,7 @@ import Loading from '@/compoments/Loading.vue';
 export default {
   name: "Vue3TagsInput",
   emits: ['update:modelValue', 'update:tags', 'on-limit', 'on-tags-changed', 'on-remove',
-    'on-error', 'on-focus', 'on-blur', 'on-select', 'on-select-duplicate-tag'],
+    'on-error', 'on-focus', 'on-blur', 'on-select', 'on-select-duplicate-tag', 'on-new-tag'],
   props: {
     readOnly: {
       type: Boolean,
@@ -141,6 +141,10 @@ export default {
     uniqueSelectField: {
       type: String,
       default: 'id'
+    },
+    addTagOnKeysWhenSelect: {
+      type: Boolean,
+      default: false
     },
     // multiple: {
     //   type: Boolean,
@@ -276,7 +280,7 @@ export default {
       this.$emit('on-blur', e);
     },
     addNew(e) {
-      if (this.select) {
+      if (this.select && !this.addTagOnKeysWhenSelect) {
         return;
       }
       const keyShouldAddTag = e
@@ -289,17 +293,16 @@ export default {
       ) {
         return;
       }
-      // this.$nextTick(() => {
-      //   if (this.select && this.multiple) {
-      //     this.setPosition();
-      //   }
-      // })
       if (
           this.newTag &&
           (this.allowDuplicates || this.innerTags.indexOf(this.newTag) === -1) &&
           this.validateIfNeeded(this.newTag) && this.newTag.length <= 50
       ) {
         this.innerTags.push(this.newTag);
+        if (this.addTagOnKeysWhenSelect) {
+          this.$emit('on-new-tag', this.newTag);
+          this.updatePositionContextMenu();
+        }
         this.resetInputValue();
         this.tagChange();
         e && e.preventDefault();
@@ -315,6 +318,11 @@ export default {
         }
         e && e.preventDefault();
       }
+    },
+    updatePositionContextMenu() {
+      this.$nextTick(() => {
+        this.setPosition()
+      });
     },
     makeItError(isDuplicatedOrMaxLength) {
       this.$refs.inputTag.className = 'v3ti-new-tag v3ti-new-tag--error';
@@ -336,17 +344,13 @@ export default {
       }
       this.innerTags.pop();
       this.tagChange();
+      this.updatePositionContextMenu();
     },
     remove(index) {
       this.innerTags.splice(index, 1);
-      // this.$emit('update:tags', this.innerTags);
       this.tagChange();
-      this.$emit("on-remove", index)
-      // this.$nextTick(() => {
-      //   if (this.select && this.multiple) {
-      //     this.setPosition();
-      //   }
-      // })
+      this.$emit("on-remove", index);
+      this.updatePositionContextMenu();
     },
     tagChange() {
       this.$emit("on-tags-changed", this.innerTags);
