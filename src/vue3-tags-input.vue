@@ -14,7 +14,7 @@
               class="v3ti-tag">
           <slot v-if="isShot('item')"
                 name="item" v-bind="{ name: tag, index, tag }"></slot>
-          <span v-else> {{ tag }} </span>
+          <span v-else class="v3ti-tag-content"> {{ tag }} </span>
           <a v-if="!readOnly" @click.prevent.stop="remove(index)" class="v3ti-remove-tag"></a>
         </span>
       <input
@@ -197,12 +197,6 @@ export default {
         this.innerTags = [...tags]
       }
     },
-    newTag() {
-      if (this.newTag.length > 50) {
-        this.$refs.inputTag.className = 'v3ti-new-tag v3ti-new-tag--error';
-        this.$refs.inputTag.style.textDecoration = "underline";
-      }
-    }
   },
   methods: {
     isShot(name) {
@@ -296,7 +290,7 @@ export default {
       if (
           this.newTag &&
           (this.allowDuplicates || this.innerTags.indexOf(this.newTag) === -1) &&
-          this.validateIfNeeded(this.newTag) && this.newTag.length <= 50
+          this.validateIfNeeded(this.newTag)
       ) {
         this.innerTags.push(this.newTag);
         if (this.addTagOnKeysWhenSelect) {
@@ -308,11 +302,7 @@ export default {
         e && e.preventDefault();
       } else {
         if (this.validateIfNeeded(this.newTag)) {
-          if (this.newTag && this.newTag.length <= 50) {
-            this.makeItError(true);
-          } else {
-            this.makeItError('maxLength');
-          }
+          this.makeItError(true);
         } else {
           this.makeItError(false);
         }
@@ -365,6 +355,8 @@ $errorColor: #F56C6C;
 $primaryColor: #317CAF;
 $successColor: #19be6b;
 $paddingItem: 4px 7px;
+$marginTag: 3px;
+$paddingTag: 5px;
 .v3ti {
   border-radius: 5px;
   min-height: 32px;
@@ -444,7 +436,6 @@ $paddingItem: 4px 7px;
     width: 100%;
     display: flex;
     flex-wrap: wrap;
-
     &--select {
       padding-right: 30px;
     }
@@ -453,13 +444,21 @@ $paddingItem: 4px 7px;
   .v3ti-tag {
     display: flex;
     font-weight: 400;
-    margin: 3px;
-    padding: 0 5px;
+    margin: $marginTag;
+    padding: 0 $paddingTag;
     background: $primaryColor;
     color: #ffffff;
     height: 27px;
     border-radius: 5px;
     align-items: center;
+    max-width: calc(100% - (($marginTag * 2) + ($paddingTag * 2)));
+    .v3ti-tag-content {
+      flex: 1;
+      min-width: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
     .v3ti-remove-tag {
       color: #ffffff;

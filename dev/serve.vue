@@ -1,21 +1,19 @@
 <template>
   <div id="app">
     <div class="form">
-      <!--      npm publish-->
       <vue3-tags-input placeholder="add tags"
                        :tags="tags"
-                       :validate="csValidate"
+                       :add-tag-on-blur="true"
+                       :limit="100"
+                       :add-tag-on-keys="[13]"
+                       :allow-duplicates="true"
                        @on-focus="handleFocus"
                        @on-blur="handleBlur"
                        @on-remove="handleRemove"
                        @on-tags-changed="handleChangeTag">
-        <template #item="{ name, index }">
-          {{ name }}
-        </template>
       </vue3-tags-input>
       <br>
       <div class="custom-input-tags">
-        {{ tagsSelect }}
         <vue3-tags-input v-model:tags="tagsSelect"
                          v-model="tag"
                          :select="true"
@@ -112,6 +110,6 @@ body {
   font-family: Inter var,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
 }
 .form {
-  width: 300px;
+  width: 600px;
 }
 </style>
