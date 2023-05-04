@@ -30,13 +30,14 @@
     </div>
     <section v-if="select"
              class="v3ti-context-menu"
+             :class="{ 'v3ti-context-menu-no-data': !isShowNoData && selectItems.length === 0 }"
              ref="contextMenu">
       <div v-if="loading"
            class="v3ti-loading">
         <slot v-if="isShot('loading')"></slot>
         <Loading v-else/>
       </div>
-      <div v-if="!loading && selectItems.length === 0"
+      <div v-if="!loading && selectItems.length === 0 && isShowNoData"
            class="v3ti-no-data">
         <slot v-if="isShot('no-data')" name="no-data"></slot>
         <span v-else>
@@ -44,7 +45,6 @@
         </span>
       </div>
       <div v-if="!loading && selectItems.length > 0">
-
         <div v-for="(item, index) in selectItems"
              :key="index"
              class="v3ti-context-item"
@@ -145,6 +145,10 @@ export default {
     addTagOnKeysWhenSelect: {
       type: Boolean,
       default: false
+    },
+    isShowNoData: {
+      type: Boolean,
+      default: true
     },
     // multiple: {
     //   type: Boolean,
@@ -430,6 +434,10 @@ $paddingTag: 5px;
         color: $primaryColor;
       }
     }
+  }
+
+  .v3ti-context-menu-no-data {
+    padding: 0;
   }
 
   .v3ti-content {
