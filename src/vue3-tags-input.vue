@@ -73,7 +73,7 @@
 
 <script>
 import vClickOutside from 'click-outside-vue3';
-import Loading from '@/compoments/Loading.vue';
+import Loading from './compoments/Loading.vue';
 
 export default {
   name: "Vue3TagsInput",
