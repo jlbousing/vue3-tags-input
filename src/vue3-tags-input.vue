@@ -97,7 +97,7 @@ export default {
       default: function () {
         return [
           13, // Enter
-          188, // Comma ','
+          ',', // Comma ','
           32, // Space
         ];
       }
@@ -282,7 +282,7 @@ export default {
         return;
       }
       const keyShouldAddTag = e
-          ? this.addTagOnKeys.indexOf(e.keyCode) !== -1
+          ? this.addTagOnKeys.indexOf(e.keyCode) !== -1 || this.addTagOnKeys.indexOf(e.key) !== -1
           : true;
       const typeIsNotBlur = e && e.type !== "blur";
       if (
