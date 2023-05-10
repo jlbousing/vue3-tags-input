@@ -319,9 +319,11 @@ export default {
       });
     },
     makeItError(isDuplicatedOrMaxLength) {
-      this.$refs.inputTag.className = 'v3ti-new-tag v3ti-new-tag--error';
-      this.$refs.inputTag.style.textDecoration = "underline";
-      this.$emit('on-error', isDuplicatedOrMaxLength);
+      if (this.newTag !== '') {
+        this.$refs.inputTag.className = 'v3ti-new-tag v3ti-new-tag--error';
+        this.$refs.inputTag.style.textDecoration = "underline";
+        this.$emit('on-error', isDuplicatedOrMaxLength);
+      }
     },
     validateIfNeeded(tagValue) {
       if (this.validate === "" || this.validate === undefined) {

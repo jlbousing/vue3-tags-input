@@ -5,6 +5,7 @@
                        :tags="tags"
                        :add-tag-on-blur="true"
                        :limit="100"
+                       :validate="csValidate"
                        :add-tag-on-keys="[13]"
                        :allow-duplicates="true"
                        @on-focus="handleFocus"
