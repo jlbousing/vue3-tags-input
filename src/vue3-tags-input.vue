@@ -26,7 +26,8 @@
           @blur="handleInputBlur"
           @focus="handleInputFocus"
           @input="makeItNormal"
-          class="v3ti-new-tag"/>
+          class="v3ti-new-tag"
+          :disabled="readOnly"/>
     </div>
     <section v-if="select"
              class="v3ti-context-menu"
